@@ -1,0 +1,88 @@
+
+<!DOCTYPE html>
+<html lang="nl">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Turbo Circuit</title>
+<style>
+*{box-sizing:border-box}
+body{margin:0;background:#101820;color:white;font-family:Arial;text-align:center}
+header{padding:12px;background:#17232d;font-size:22px;font-weight:bold}
+canvas{display:block;width:100%;height:55vh;background:#39733c;touch-action:none}
+.info{padding:8px}
+.controls{display:flex;justify-content:space-around;gap:8px;padding:10px}
+button{font-size:22px;font-weight:bold;padding:18px 22px;border:0;border-radius:12px;background:#e5e9ef;color:#15202b;touch-action:none}
+.go{background:#26c76a}.brake{background:#e84c4c;color:white}
+</style>
+</head>
+<body>
+<header>🏎️ TURBO CIRCUIT</header>
+<div class="info">Snelheid: <span id="speed">0</span> km/u</div>
+<canvas id="game"></canvas>
+<div class="controls">
+<button id="left">⬅️</button>
+<button id="brake" class="brake">REM</button>
+<button id="gas" class="go">GAS</button>
+<button id="right">➡️</button>
+</div>
+<script>
+const c=document.getElementById('game'),ctx=c.getContext('2d');
+function resize(){c.width=c.clientWidth;c.height=c.clientHeight}
+resize();window.addEventListener('resize',resize);
+let carX=0,heading=0,speed=0,curve=0;
+const keys={};
+function hold(id,key){
+ const b=document.getElementById(id);
+ b.addEventListener('pointerdown',e=>{e.preventDefault();keys[key]=true;b.setPointerCapture(e.pointerId)});
+ for(const ev of ['pointerup','pointercancel','lostpointercapture'])
+ b.addEventListener(ev,()=>keys[key]=false);
+}
+hold('gas','gas');hold('brake','brake');hold('left','left');hold('right','right');
+function drawCar(x,y,a){
+ ctx.save();ctx.translate(x,y);ctx.rotate(a);
+ ctx.fillStyle='#111';ctx.fillRect(-19,-30,9,20);ctx.fillRect(10,-30,9,20);
+ ctx.fillRect(-19,13,9,20);ctx.fillRect(10,13,9,20);
+ ctx.fillStyle='#e51e35';ctx.beginPath();
+ ctx.moveTo(0,-38);ctx.lineTo(15,-20);ctx.lineTo(18,20);
+ ctx.lineTo(10,32);ctx.lineTo(-10,32);ctx.lineTo(-18,20);
+ ctx.lineTo(-15,-20);ctx.closePath();ctx.fill();
+ ctx.fillStyle='#bdeaff';ctx.fillRect(-11,-15,22,14);
+ ctx.fillStyle='#eee';ctx.fillRect(-12,22,7,4);ctx.fillRect(5,22,7,4);
+ ctx.restore();
+}
+function frame(){
+ const w=c.width,h=c.height;
+ if(keys.gas)speed=Math.min(220,speed+0.8);
+ else speed=Math.max(0,speed-0.22);
+ if(keys.brake)speed=Math.max(0,speed-2.4);
+ if(keys.left)heading-=0.045*(0.3+speed/100);
+ if(keys.right)heading+=0.045*(0.3+speed/100);
+ carX+=Math.sin(heading)*speed*0.025;
+ carX=Math.max(-w*0.65,Math.min(w*0.65,carX));
+ ctx.clearRect(0,0,w,h);
+ ctx.fillStyle='#39733c';ctx.fillRect(0,0,w,h);
+ const bend=Math.sin(Date.now()/3500)*w*.15;
+ const roadW=Math.min(w*.76,520);
+ ctx.fillStyle='#b8b8b8';
+ ctx.beginPath();
+ ctx.moveTo(w/2-roadW/2+bend,h);ctx.lineTo(w/2-roadW/2+bend*.3,0);
+ ctx.lineTo(w/2+roadW/2+bend*.3,0);ctx.lineTo(w/2+roadW/2+bend,h);ctx.fill();
+ ctx.fillStyle='#292d32';
+ ctx.beginPath();
+ ctx.moveTo(w/2-roadW/2+8+bend,h);ctx.lineTo(w/2-roadW/2+8+bend*.3,0);
+ ctx.lineTo(w/2+roadW/2-8+bend*.3,0);ctx.lineTo(w/2+roadW/2-8+bend,h);ctx.fill();
+ ctx.strokeStyle='white';ctx.lineWidth=4;ctx.setLineDash([25,22]);
+ ctx.beginPath();ctx.moveTo(w/2+bend,h);ctx.lineTo(w/2+bend*.3,0);ctx.stroke();ctx.setLineDash([]);
+ for(let y=0;y<h;y+=45){
+  ctx.fillStyle='#fff';ctx.fillRect(w/2-roadW/2+bend-10,y,8,22);
+  ctx.fillRect(w/2+roadW/2+bend+2,y,8,22);
+ }
+ drawCar(w/2+carX,h*.78,heading);
+ document.getElementById('speed').textContent=Math.round(speed);
+ requestAnimationFrame(frame);
+}
+frame();
+</script>
+</body>
+</html>
